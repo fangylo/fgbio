@@ -42,9 +42,6 @@ trait CommandLineTool extends LazyLogging {
   /** Command used for the above executable. */
   val TestCommand: Seq[String]
 
-  /** Args used to specify expression of the tool, e,g, "-e" in `Rscript -e "require(ggplot2)`. */
-  val Expression_arg: String = null
-
   /** Exception class that holds onto an executable's exit/status code. */
   case class ToolException(status: Int) extends RuntimeException {
     override def getMessage: String = s"$Executable failed with exit code $status."
@@ -109,7 +106,7 @@ trait Versioned {
 /** Test if specified module(s) are included with the tested executable. */
 trait Modular {
   self: CommandLineTool =>
-  def TestModuleCommand(module: String): Seq[String] = Seq(Executable, Expression_arg, module)
+  def TestModuleCommand(module: String): Seq[String]
   def TestModuleCommand(modules: Seq[String]): Seq[Seq[String]] = modules.map(TestModuleCommand)
   def IsModuleAvailable(module: String): Boolean =
     canExecute(TestModuleCommand(module): _*)
@@ -121,11 +118,11 @@ trait Modular {
 object Rscript extends CommandLineTool with Versioned with Modular {
   val Executable: String      = "Rscript"
   val Suffix: String          = ".R"
-  override val Expression_arg = "-e"
+  def TestModuleCommand(module: String): Seq[String] = Seq(Executable, "-e", s"stopifnot(require('$module'))")
   override lazy val Available: Boolean = {
     // Only returns true if R executable exists and ggplot2 is installed
     val ToolAvailable: Boolean = canExecute(Executable +: Seq(VersionFlag):_*)
-    val ModuleAvailable : Boolean = IsModuleAvailable(module = "library(ggplot2)")
+    val ModuleAvailable : Boolean = IsModuleAvailable(module = "ggplot2")
     Seq(ToolAvailable,ModuleAvailable).forall(_==true)
   }
 //    println("--------------11111111111------------")
