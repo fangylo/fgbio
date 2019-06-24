@@ -24,20 +24,15 @@
 
 package com.fulcrumgenomics.util
 
-import java.lang.reflect
 import java.nio.file.Path
 
 import com.fulcrumgenomics.commons.util.LazyLogging
-import com.fulcrumgenomics.util.Rscript.IsModuleAvailable
 
 import scala.util.{Success, Try}
 
 trait CommandLineTool extends LazyLogging {
   /** The name of the executable such as Rscript or gs. */
   val Executable: String
-
-  /** Suffix for scripts that can be run by this tool. */
-  val Suffix: String
 
   /** Command used for the above executable. */
   val TestCommand: Seq[String]
@@ -60,6 +55,12 @@ trait CommandLineTool extends LazyLogging {
   lazy val Available: Boolean = {
     canExecute(Executable +: TestCommand:_*)
   }
+}
+
+trait CanRunScript {
+  self: CommandLineTool =>
+  /** Suffix for scripts that can be run by this tool. */
+  val Suffix: String
 
   /** Executes a script from the classpath if the tested executable is available. */
   def execIfAvailable(scriptResource: String, args: String*): Try[Unit] =
@@ -115,7 +116,7 @@ trait Modular {
     modules.map(IsModuleAvailable).forall(x => x == true)
 }
 
-object Rscript extends CommandLineTool with Versioned with Modular {
+object Rscript extends CommandLineTool with Versioned with Modular with CanRunScript {
   val Executable: String      = "Rscript"
   val Suffix: String          = ".R"
   def TestModuleCommand(module: String): Seq[String] = Seq(Executable, "-e", s"stopifnot(require('$module'))")
@@ -123,24 +124,18 @@ object Rscript extends CommandLineTool with Versioned with Modular {
     // Only returns true if R executable exists and ggplot2 is installed
     val ToolAvailable: Boolean = canExecute(Executable +: Seq(VersionFlag):_*)
     val ModuleAvailable : Boolean = IsModuleAvailable(module = "ggplot2")
-    Seq(ToolAvailable,ModuleAvailable).forall(_==true)
+    Seq(ToolAvailable, ModuleAvailable).forall( _ == true)
   }
-//    println("--------------11111111111------------")
-//    println("Executable:"+ Executable)
-//    println("TestCommand:" + TestCommand) // Should just be testing version here
-//    println("Tool Available:" + Available.toString)
 }
 
 object GhostScript extends CommandLineTool with Versioned {
   val Executable: String = "gs"
-  val Suffix: String = ".sh"
 }
 
-
-//object Python3 extends CommandLineTool with Versioned with Modular {
-//  val Executable: String = "python3"
-//  val Suffix: String = ".py"
-//  override val Expression_arg = "-c"
-//  override val TestCommand: Seq[String] = Seq(VersionFlag)
-//  val ModuleAvailable : Boolean = ModuleAvailable(module = "import numpy")
-//}
+object Python3 extends CommandLineTool with Versioned with Modular with CanRunScript {
+  val Executable: String = "python3"
+  val Suffix: String = ".py"
+  def TestModuleCommand(module: String): Seq[String] = Seq(Executable, "-c", s"'import $module'")
+  override val TestCommand: Seq[String] = Seq(VersionFlag)
+//  val ModuleAvailable : Boolean = IsModuleAvailable(module = "numpy")
+}
