@@ -24,9 +24,10 @@
 
 package com.fulcrumgenomics.util
 
-import java.nio.file.Path
+import java.nio.file.{Files, Path}
 
 import com.fulcrumgenomics.commons.util.LazyLogging
+import scala.io.Source
 
 import scala.util.{Success, Try}
 
@@ -42,18 +43,35 @@ trait CommandLineTool extends LazyLogging {
     override def getMessage: String = s"$Executable failed with exit code $status."
   }
 
-  /** Returns true if the command can execute with no error. */
-  def canExecute(command: String*): Boolean = {
+  /** Returns a tuple of (Boolean, String): first element is true when command can execute
+    *  with no error; second element is a string of command stdout */
+  def execArgs(command: String*):(Boolean, String) = {
     try {
-      val process = new ProcessBuilder(command: _*).redirectErrorStream(true).start()
-      process.waitFor() == 0
+      // Create temp file for storing stdout result
+      val output = Files.createTempFile("output.", ".txt")
+      output.toFile.deleteOnExit()
+
+      // Start process
+      val process = new ProcessBuilder(command: _*)
+        .redirectErrorStream(true)
+        .redirectOutput(output.toFile)
+        .start()
+
+      // True if the command can execute with no error
+      val canExecute: Boolean = process.waitFor() == 0
+      val bufferedSource      = Source.fromFile(output.toString)
+      // Read redirected stdout
+      val lines: String       = bufferedSource.getLines().mkString
+      bufferedSource.close()
+//      println(lines)
+      (canExecute, lines)
     }
-    catch { case e: Exception => false }
+    catch { case e: Exception => (false, "") }
   }
 
   /** Returns true if the tool is available and false otherwise. */
   lazy val Available: Boolean = {
-    canExecute(Executable +: TestCommand:_*)
+    execArgs(Executable +: TestCommand:_*)._1
   }
 }
 
@@ -109,11 +127,9 @@ trait Modular {
   self: CommandLineTool =>
   def TestModuleCommand(module: String): Seq[String]
   def TestModuleCommand(modules: Seq[String]): Seq[Seq[String]] = modules.map(TestModuleCommand)
-  def IsModuleAvailable(module: String): Boolean =
-    canExecute(TestModuleCommand(module): _*)
-  def IsModuleAvailable(modules: Seq[String]): Boolean =
-    // Only returns true is all modules exist
-    modules.map(IsModuleAvailable).forall(x => x == true)
+  def IsModuleAvailable(module: String): Boolean                = execArgs(TestModuleCommand(module): _*)._1
+  // Only returns true is all modules exist
+  def IsModuleAvailable(modules: Seq[String]): Boolean          =  modules.map(IsModuleAvailable).forall(x => x == true)
 }
 
 object Rscript extends CommandLineTool with Versioned with Modular with CanRunScript {
@@ -122,7 +138,7 @@ object Rscript extends CommandLineTool with Versioned with Modular with CanRunSc
   def TestModuleCommand(module: String): Seq[String] = Seq(Executable, "-e", s"stopifnot(require('$module'))")
   override lazy val Available: Boolean = {
     // Only returns true if R executable exists and ggplot2 is installed
-    val ToolAvailable: Boolean = canExecute(Executable +: Seq(VersionFlag):_*)
+    val ToolAvailable: Boolean    = execArgs(Executable +: Seq(VersionFlag):_*)._1
     val ModuleAvailable : Boolean = IsModuleAvailable(module = "ggplot2")
     Seq(ToolAvailable, ModuleAvailable).forall( _ == true)
   }
@@ -137,5 +153,4 @@ object Python3 extends CommandLineTool with Versioned with Modular with CanRunSc
   val Suffix: String = ".py"
   def TestModuleCommand(module: String): Seq[String] = Seq(Executable, "-c", s"'import $module'")
   override val TestCommand: Seq[String] = Seq(VersionFlag)
-//  val ModuleAvailable : Boolean = IsModuleAvailable(module = "numpy")
 }
