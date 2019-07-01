@@ -589,10 +589,9 @@ class CollectDuplexSeqMetrics
     if (this.duplexUmiCounts) Metric.write(duplexUmiPath, duplexUmiMetrics(umiMetricValues))
 
     if (generatePlots) {
-      Rscript.execIfAvailable(PlottingScript, fsPath.toString, dfsPath.toString, yieldPath.toString, umiPath.toString, pdfPath.toString, description) match {
-        case Failure(e) => logger.warning(s"Generation of PDF plots failed: ${e.getMessage}")
-        case _ => Unit
-      }
+      try{Rscript.execIfAvailable(PlottingScript, fsPath.toString, dfsPath.toString, yieldPath.toString, umiPath.toString, pdfPath.toString, description)}
+      catch {case e: Exception => logger.warning(s"Generation of PDF plots failed: ${e.getMessage}")}
+
     }
   }
 }

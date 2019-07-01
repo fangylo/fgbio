@@ -216,10 +216,8 @@ class CollectErccMetrics
         logger.warning("No metrics generated (is your BAM empty?). Plots will not be generated.")
       }
       else {
-        Rscript.execIfAvailable(ScriptPath, detailedPath.toString, plotPath.toString, plotDescription(in, input), minTranscriptCount.toString) match {
-          case Failure(e) => logger.warning(s"Generation of PDF plots failed: ${e.getMessage}")
-          case _ => Unit
-        }
+        try{Rscript.execIfAvailable(ScriptPath, detailedPath.toString, plotPath.toString, plotDescription(in, input), minTranscriptCount.toString)}
+        catch {case e: Exception => logger.warning(s"Generation of PDF plots failed: ${e.getMessage}")}
       }
     }
   }
