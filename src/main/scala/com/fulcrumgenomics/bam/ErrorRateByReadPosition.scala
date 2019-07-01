@@ -112,10 +112,9 @@ class ErrorRateByReadPosition
     }
     else {
       val description = plotDescription(in, input)
-      Rscript.execIfAvailable(ScriptPath, metricsPath.toString, plotPath.toString, description) match {
-        case Failure(e) => logger.warning(s"Generation of PDF plots failed: ${e.getMessage}")
-        case _ => Unit
-      }
+
+      try{Rscript.execIfAvailable(ScriptPath, metricsPath.toString, plotPath.toString, description)}
+      catch {case e: Exception => logger.warning(s"Generation of PDF plots failed: ${e.getMessage}")}
     }
   }
 

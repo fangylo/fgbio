@@ -1,88 +1,52 @@
-/*
- * The MIT License
- *
- * Copyright (c) 2017 Fulcrum Genomics LLC
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-
 package com.fulcrumgenomics.util
 
 import java.nio.file.Path
 
-import com.fulcrumgenomics.commons.util.LazyLogging
+import com.fulcrumgenomics.commons.io.{Rscript => NewRscipt}
 
-import scala.io.Source
-import scala.util.{Success, Try}
+import scala.util.Try
 
-/**
-  * Object that enables running of R scripts via the Rscript command line too.
-  */
-object Rscript extends LazyLogging {
-  /** The name of the Rscript executable. */
-  private val Executable = "Rscript"
+object Rscript extends {
 
-  /** Exception class that holds onto an executable's exit/status code. */
-  case class RscriptException(status: Int) extends RuntimeException {
-    override def getMessage: String = s"Rscript failed with exit code ${status}."
-  }
+  @deprecated(since="v1.21", message = "Use `com.fulcrumgenomics.commons.io.CommandLineTool.Rscript` instead.")
+  val Executable: String = NewRscipt.Executable
 
-  /** Returns true if R is available and false otherwise. */
-  lazy val Available: Boolean = {
-    try {
-      val process = new ProcessBuilder(Executable, "-e", "require(ggplot2)").redirectErrorStream(true).start()
-      process.waitFor() == 0
-    }
-    catch { case e: Exception => false }
-  }
+  @deprecated(since="v1.21", message = "Use `com.fulcrumgenomics.commons.io.CommandLineTool.Rscript` instead.")
+  val Suffix: String = NewRscipt.Suffix
 
-  /** Executes an Rscript from the classpath if Rscript is available. */
-  def execIfAvailable(scriptResource: String, args: String*): Try[Unit] =
-    if (Available) exec(scriptResource, args:_*) else Success(Unit)
+  @deprecated(since="v1.21", message = "Use `com.fulcrumgenomics.commons.io.CommandLineTool.Rscript` instead.")
+  val TestCommand: Seq[String] = NewRscipt.TestCommand
 
-  /** Executes an Rscript from a script stored at a Path if Rscript is available. */
-  def execIfAvailable(script: Path, args: String*): Try[Unit] =
-    if (Available) exec(script, args:_*) else Success(Unit)
+  @deprecated(since="v1.21", message = "Use `com.fulcrumgenomics.commons.io.CommandLineTool.Rscript` instead.")
+  val VersionFlag: String = NewRscipt.VersionFlag
 
-  /** Executes an Rscript from the classpath. */
-  def exec(scriptResource: String, args: String*): Try[Unit] =
-    Try { writeResourceToTempFile(scriptResource) }.map(path => exec(path, args:_*))
+  @deprecated(since="v1.21", message = "Use `com.fulcrumgenomics.commons.io.CommandLineTool.Rscript` instead.")
+  lazy val Available: Boolean = NewRscipt.Available
 
-  /** Executes an Rscript from a script stored at a Path. */
-  def exec(script: Path, args: String*): Try[Unit] = Try {
-    val command = Rscript.Executable +: script.toAbsolutePath.toString +: args
-    val process = new ProcessBuilder(command:_*).redirectErrorStream(false).start()
-    val pipe1   = Io.pipeStream(process.getErrorStream, logger.info)
-    val pipe2   = Io.pipeStream(process.getInputStream, logger.debug)
-    val retval  = process.waitFor()
-    pipe1.close()
-    pipe2.close()
+  @deprecated(since="v1.21", message = "Use `com.fulcrumgenomics.commons.io.CommandLineTool.Rscript` instead.")
+  lazy val Version: String = NewRscipt.Version
 
-    if (retval != 0) throw RscriptException(retval)
-  }
+  @deprecated(since="v1.21", message = "Use `com.fulcrumgenomics.commons.io.CommandLineTool.Rscript` instead.")
+  def execIfAvailable(script: Path, args: String*): Unit = NewRscipt.execIfAvailable(script, args: _*)
 
-  /** Extracts a resource from the classpath and writes it to a temp file on disk. */
-  private def writeResourceToTempFile(resource: String): Path = {
-    val lines = Io.readLinesFromResource(resource).toSeq
-    val path = Io.makeTempFile("script.", ".R")
-    path.toFile.deleteOnExit()
-    Io.writeLines(path, lines)
-    path
-  }
+  @deprecated(since="v1.21", message = "Use `com.fulcrumgenomics.commons.io.CommandLineTool.Rscript` instead.")
+  def execIfAvailable(scriptResource: String, args: String*): Unit = NewRscipt.execIfAvailable(scriptResource, args: _*)
+
+  @deprecated(since="v1.21", message = "Use `com.fulcrumgenomics.commons.io.CommandLineTool.Rscript` instead.")
+  def exec(scriptResource: String, args: String*): Unit = NewRscipt.exec(scriptResource, args: _*)
+
+  @deprecated(since="v1.21", message = "Use `com.fulcrumgenomics.commons.io.CommandLineTool.Rscript` instead.")
+  def exec(script: Path, args: String*): Unit = NewRscipt.exec(script, args: _*)
+
+  @deprecated(since="v1.21", message = "Use `com.fulcrumgenomics.commons.io.CommandLineTool.Rscript` instead.")
+  def TestModuleCommand(module: String): Seq[String] = NewRscipt.TestModuleCommand(module)
+
+  @deprecated(since="v1.21", message = "Use `com.fulcrumgenomics.commons.io.CommandLineTool.Rscript` instead.")
+  def TestModuleCommand(modules: Seq[String]): Seq[Seq[String]] = NewRscipt.TestModuleCommand(modules)
+
+  @deprecated(since="v1.21", message = "Use `com.fulcrumgenomics.commons.io.CommandLineTool.Rscript` instead.")
+  def IsModuleAvailable(module: String): Boolean = NewRscipt.IsModuleAvailable(module)
+
+  @deprecated(since="v1.21", message = "Use `com.fulcrumgenomics.commons.io.CommandLineTool.Rscript` instead.")
+  def IsModuleAvailable(modules: Seq[String]): Boolean = NewRscipt.IsModuleAvailable(modules)
 }
